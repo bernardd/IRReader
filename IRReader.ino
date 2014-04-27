@@ -32,17 +32,23 @@ void loop() {
   unsigned long t=1;
   unsigned int pos = 0;
   unsigned int gap = 0;
+  unsigned long on_duration;
   while (digitalRead(IR)) {}
   
   digitalWrite(led, HIGH);
   while (t && pos < L) {
+    unsigned long s = micros();
     t = pulseIn(IR, HIGH);
     data[pos++] = (unsigned int)t;
+    if (t)
+      on_duration = micros() - s - t;
   }
   digitalWrite(led, LOW);
   
   if (pos == L)
     Serial.println("Warning: Storage exhausted!");
+    
+  pos--; // Ignore the last value since it will always be 0
   
   int bits = 0;
   for (int i=0; i<pos; i++) {
@@ -50,7 +56,7 @@ void loop() {
     if (d < 500) {
       Serial.print(0);
       bits++;
-    } else if (d < 5000) {
+    } else if (d < 5000 && d > 900) {
       Serial.print(1);
       bits++;
     } else {
@@ -62,8 +68,16 @@ void loop() {
       Serial.println(d);
     }
   }
+  Serial.println();
+  for (int i=0; i<pos; i++) {
+    Serial.print(data[i]);
+    Serial.print(',');
+  }
+
+  Serial.print("\nLast on time: ");
+  Serial.println(on_duration);
  
-  Serial.print("\nGaps: ");
+  Serial.print("Gaps: ");
   for (int i=0; i<3; i++) {
     Serial.print(gaps[i]);
     Serial.print(' ');
